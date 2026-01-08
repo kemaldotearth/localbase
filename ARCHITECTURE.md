@@ -142,8 +142,10 @@ Handles conflicts during sync:
 ### Schema Migrations
 
 - Basic versioning
-- **Future**: Sophisticated migration system
-- **Future**: Schema diffing
+- **NEW**: Extended schema format with Supabase column definitions
+- **NEW**: `generateSupabaseMigration()` utility for SQL generation
+- **NEW**: `generateTypeScriptInterface()` for type generation
+- **NEW**: `validateSchemaForSync()` for schema validation
 
 ### Performance
 
@@ -199,6 +201,46 @@ await db.open();
 // Control sync manually
 await db.sync.push();
 await db.sync.pull();
+```
+
+### Extended Schema with Supabase
+
+```typescript
+import {
+  Database,
+  generateSupabaseMigration,
+  type ExtendedTableSchema,
+} from "localbase";
+
+// Define schema with full Supabase column definitions
+const schema: Record<string, ExtendedTableSchema> = {
+  todos: {
+    keyPath: "++id",
+    indexes: ["completed", "createdAt"],
+    columns: {
+      id: { type: "bigint", primaryKey: true, generated: true },
+      title: { type: "text", nullable: false },
+      completed: { type: "boolean", default: false },
+      user_id: { type: "uuid", references: "auth.users(id)" },
+      created_at: { type: "timestamptz", default: "now()" },
+    },
+  },
+};
+
+const db = new Database("App", schema, { supabase: config });
+
+// Generate SQL migration for Supabase
+const sql = generateSupabaseMigration(
+  schema,
+  { todos: "todos" },
+  {
+    enableRLS: true,
+    includeTimestamps: true,
+    includePolicies: true,
+  }
+);
+console.log(sql);
+// Copy output to Supabase Dashboard SQL Editor or migration file
 ```
 
 ## Dependencies

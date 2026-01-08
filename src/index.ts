@@ -4,6 +4,11 @@ export { Query } from "./core/query";
 export { Observable } from "./live/observable";
 export { SyncEngine } from "./sync/sync-engine";
 export { SupabaseAdapter } from "./sync/supabase-adapter";
+export {
+  generateSupabaseMigration,
+  generateTypeScriptInterface,
+  validateSchemaForSync,
+} from "./sync/schema-generator";
 
 export type {
   TableSchema,
@@ -16,6 +21,8 @@ export type {
   ObservableCallback,
   Unsubscribe,
   IndexSpec,
+  ExtendedTableSchema,
+  ColumnDefinition,
 } from "./types";
 
 import { Database } from "./core/database";

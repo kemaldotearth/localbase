@@ -283,11 +283,45 @@ export class Database {
     }
   }
 
-  private parseSchema(schema: string | any[]): {
+  private parseSchema(
+    schema: string | any[] | { keyPath?: string; indexes?: string[] }
+  ): {
     keyPath: string | string[] | null;
     autoIncrement: boolean;
     indexes?: any[];
   } {
+    // Handle extended schema format (object with keyPath property)
+    if (
+      typeof schema === "object" &&
+      !Array.isArray(schema) &&
+      "keyPath" in schema
+    ) {
+      const extendedSchema = schema as { keyPath: string; indexes?: string[] };
+      const keyPathStr = extendedSchema.keyPath;
+      let keyPath: string | null = null;
+      let autoIncrement = false;
+
+      // Parse keyPath string (e.g., "++id")
+      if (keyPathStr.startsWith("++")) {
+        keyPath = keyPathStr.substring(2);
+        autoIncrement = true;
+      } else if (keyPathStr.startsWith("&")) {
+        keyPath = keyPathStr.substring(1);
+      } else {
+        keyPath = keyPathStr;
+      }
+
+      // Convert string indexes to index objects
+      const indexes = extendedSchema.indexes?.map((idx) => ({
+        name: idx,
+        keyPath: idx,
+        unique: false,
+      }));
+
+      return { keyPath, autoIncrement, indexes };
+    }
+
+    // Handle legacy string format (e.g., "++id, name, email")
     if (typeof schema === "string") {
       const parts = schema.split(",").map((s) => s.trim());
       let keyPath: string | null = null;
@@ -312,7 +346,10 @@ export class Database {
       }
 
       return { keyPath, autoIncrement, indexes };
-    } else if (Array.isArray(schema)) {
+    }
+
+    // Handle array of IndexSpec
+    if (Array.isArray(schema)) {
       return { keyPath: null, autoIncrement: false, indexes: schema };
     }
 
