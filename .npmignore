@@ -1,0 +1,13 @@
+node_modules/
+examples/
+tests/
+*.log
+.DS_Store
+.env
+.env.local
+coverage/
+*.tsbuildinfo
+tsconfig.json
+tsup.config.ts
+.gitignore
+
