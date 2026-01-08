@@ -1,7 +1,3 @@
-/**
- * Low-level IndexedDB wrapper utilities
- */
-
 export function openDatabase(
   name: string,
   version: number,
@@ -90,8 +86,6 @@ export function put<T>(
   key?: IDBValidKey
 ): Promise<IDBValidKey> {
   return new Promise((resolve, reject) => {
-    // Only pass key if it's explicitly provided and not undefined/null
-    // If keyPath exists on the store, IndexedDB will throw an error if we pass key
     const request =
       key !== undefined && key !== null
         ? store.put(value, key)

@@ -1,7 +1,3 @@
-/**
- * Metadata management for sync state
- */
-
 import type { SyncMetadata } from "../types";
 import { openDatabase, get, put } from "./idb-wrapper";
 
@@ -27,9 +23,8 @@ export async function getSyncMetadata(
   db: IDBDatabase,
   table: string
 ): Promise<SyncMetadata | null> {
-  // Check if metadata store exists
   if (!db.objectStoreNames.contains(METADATA_STORE)) {
-    return null; // Store doesn't exist yet, return null
+    return null;
   }
 
   const transaction = db.transaction([METADATA_STORE], "readonly");
@@ -42,7 +37,6 @@ export async function setSyncMetadata(
   db: IDBDatabase,
   metadata: SyncMetadata
 ): Promise<void> {
-  // Check if metadata store exists
   if (!db.objectStoreNames.contains(METADATA_STORE)) {
     throw new Error(
       "Metadata store '_metadata' not found. " +
@@ -59,9 +53,8 @@ export async function getPendingChangesCount(
   db: IDBDatabase,
   table?: string
 ): Promise<number> {
-  // Check if changes store exists
   if (!db.objectStoreNames.contains(CHANGES_STORE)) {
-    return 0; // No store, no pending changes
+    return 0;
   }
 
   const transaction = db.transaction([CHANGES_STORE], "readonly");
@@ -80,7 +73,6 @@ export async function getPendingChangesCount(
   }
 
   const unsynced = await new Promise<any[]>((resolve, reject) => {
-    // Get all and filter by synced === false
     const request = store.getAll();
     request.onsuccess = () => {
       const all = request.result;

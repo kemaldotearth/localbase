@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { getDatabase, initDatabase } from "../lib/db";
-// Note: When using published package, import from "localbase" instead
 import type { Database } from "../../../src/index";
 
 interface Todo {
@@ -29,10 +28,8 @@ export function TodoList() {
 
         setDb(database);
 
-        // Load initial todos
         await loadTodos(database);
 
-        // Set up live query
         unsubscribe = database
           .table("todos")
           .live()
@@ -53,7 +50,6 @@ export function TodoList() {
 
     setup();
 
-    // Cleanup on unmount
     return () => {
       isMounted = false;
       if (unsubscribe) {

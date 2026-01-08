@@ -1,7 +1,3 @@
-/**
- * Supabase adapter - handles communication with Supabase
- */
-
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseConfig } from "../types";
 
@@ -23,7 +19,6 @@ export class SupabaseAdapter {
     const supabaseTableName = this.getSupabaseTableName(tableName);
     let query = this.client.from(supabaseTableName).select("*");
 
-    // If lastSyncTimestamp is provided, only get records updated after that
     if (lastSyncTimestamp) {
       query = query.gte(
         "updated_at",
@@ -34,7 +29,6 @@ export class SupabaseAdapter {
     const { data, error } = await query;
 
     if (error) {
-      // Provide more helpful error messages
       if (
         error.message.includes("Could not find the table") ||
         error.message.includes("schema cache")
@@ -69,7 +63,6 @@ export class SupabaseAdapter {
       `[Localbase] Attempting to upsert ${records.length} records to Supabase table '${supabaseTableName}'`
     );
 
-    // Batch upsert
     const { error } = await this.client
       .from(supabaseTableName)
       .upsert(records, { onConflict: "id" });

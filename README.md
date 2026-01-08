@@ -1,5 +1,8 @@
 # Localbase
 
+> [!CAUTION]
+> Project is experimental and a WIP. It is not yet live on npm and may have bugs.
+
 A Dexie-like IndexedDB wrapper with Supabase sync capabilities. Localbase provides an easy-to-use API for local-first applications that need to sync with Supabase.
 
 ## Features

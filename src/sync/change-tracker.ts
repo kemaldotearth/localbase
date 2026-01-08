@@ -1,7 +1,3 @@
-/**
- * Change tracker - manages local changes for sync
- */
-
 import type { ChangeRecord } from "../types";
 import { get, getAll, put, deleteKey } from "../utils/idb-wrapper";
 
@@ -13,7 +9,6 @@ export class ChangeTracker {
   }
 
   async getPendingChanges(table?: string): Promise<ChangeRecord[]> {
-    // Check if _changes store exists
     if (!this.db.objectStoreNames.contains("_changes")) {
       throw new Error(
         "Metadata store '_changes' not found. " +
@@ -26,7 +21,6 @@ export class ChangeTracker {
     const store = transaction.objectStore("_changes");
 
     const unsynced = await new Promise<ChangeRecord[]>((resolve, reject) => {
-      // Get all and filter by synced === false
       const request = store.getAll();
       request.onsuccess = () => {
         let changes = request.result.filter((c: ChangeRecord) => !c.synced);
@@ -42,7 +36,6 @@ export class ChangeTracker {
   }
 
   async markAsSynced(changeId: string): Promise<void> {
-    // Check if _changes store exists
     if (!this.db.objectStoreNames.contains("_changes")) {
       throw new Error(
         "Metadata store '_changes' not found. " +
@@ -61,7 +54,6 @@ export class ChangeTracker {
   }
 
   async markMultipleAsSynced(changeIds: string[]): Promise<void> {
-    // Check if _changes store exists
     if (!this.db.objectStoreNames.contains("_changes")) {
       throw new Error(
         "Metadata store '_changes' not found. " +
@@ -84,16 +76,14 @@ export class ChangeTracker {
   }
 
   async clearSyncedChanges(): Promise<void> {
-    // Check if _changes store exists
     if (!this.db.objectStoreNames.contains("_changes")) {
-      return; // No store, nothing to clear
+      return;
     }
 
     const transaction = this.db.transaction(["_changes"], "readwrite");
     const store = transaction.objectStore("_changes");
 
     const synced = await new Promise<ChangeRecord[]>((resolve, reject) => {
-      // Get all and filter by synced === true
       const request = store.getAll();
       request.onsuccess = () => {
         resolve(request.result.filter((c: ChangeRecord) => c.synced === true));
@@ -105,9 +95,8 @@ export class ChangeTracker {
   }
 
   async getChangesByTable(table: string): Promise<ChangeRecord[]> {
-    // Check if _changes store exists
     if (!this.db.objectStoreNames.contains("_changes")) {
-      return []; // No store, return empty array
+      return [];
     }
 
     const transaction = this.db.transaction(["_changes"], "readonly");

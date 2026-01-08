@@ -1,7 +1,3 @@
-/**
- * Simple Observable implementation for live queries
- */
-
 import type { ObservableCallback, Unsubscribe } from "../types";
 
 export class Observable<T> {
@@ -19,7 +15,6 @@ export class Observable<T> {
   subscribe(callback: ObservableCallback<T>): Unsubscribe {
     this.callbacks.add(callback);
 
-    // Immediately call with current value if it exists
     if (this._value !== undefined) {
       callback(this._value);
     }

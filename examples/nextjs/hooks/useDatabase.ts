@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { getDatabase, initDatabase } from "../lib/db";
-// Note: When using published package, import from "localbase" instead
 import type { Database } from "../../../src/index";
 
 export function useDatabase() {
@@ -44,7 +43,6 @@ export function useTable<T = any>(tableName: string) {
 
     loadData();
 
-    // Set up live query
     const unsubscribe = db
       .table<T>(tableName)
       .live()

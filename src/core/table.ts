@@ -1,7 +1,3 @@
-/**
- * Table class - main interface for table operations
- */
-
 import { Query } from "./query";
 import { Observable } from "../live/observable";
 import type { ObservableCallback, Unsubscribe, ChangeRecord } from "../types";
@@ -71,11 +67,9 @@ export class Table<T = any> {
         ? await idbAdd(store, item, serializeKey(key))
         : await idbAdd(store, item);
 
-    // Track change - use the returned key if available, otherwise try to get from item
     if (this.changeTracker) {
       let itemKey: any;
 
-      // If we have a keyPath and auto-increment, the result IS the key
       if (this.keyPath !== null && key === undefined) {
         itemKey = result;
       } else if (key !== undefined) {
@@ -84,7 +78,6 @@ export class Table<T = any> {
         itemKey = this.getKeyFromItem(item);
       }
 
-      // Create a complete item with the key for change tracking
       const itemWithKey =
         this.keyPath !== null && typeof this.keyPath === "string"
           ? { ...item, [this.keyPath]: itemKey }
@@ -105,26 +98,18 @@ export class Table<T = any> {
     const transaction = this.db.transaction([this.storeName], "readwrite");
     const store = transaction.objectStore(this.storeName);
 
-    // If the store uses in-line keys (keyPath), NEVER pass key parameter
-    // The key must be in the item itself, and IndexedDB will extract it
-    // Passing a key parameter when keyPath exists will cause an error
     let result: any;
     const hasKeyPath = this.keyPath !== null && this.keyPath !== undefined;
 
     if (hasKeyPath) {
-      // Store uses in-line keys - key must be in the item, NEVER pass key parameter
-      // Even if key is provided, we ignore it because IndexedDB will extract from item
-      // IndexedDB will throw "key parameter was provided" error if we pass it
       result = await put(store, item);
     } else {
-      // Store doesn't use in-line keys - key can be passed separately
       result =
         key !== undefined && key !== null
           ? await put(store, item, serializeKey(key))
           : await put(store, item);
     }
 
-    // Track change
     if (this.changeTracker) {
       const itemKey = this.getKeyFromItem(item);
       this.changeTracker({
@@ -146,12 +131,9 @@ export class Table<T = any> {
 
     const updated = { ...existing, ...changes };
 
-    // If store uses in-line keys, ensure the key is in the updated object
     if (this.keyPath !== null) {
-      // Key is already in the existing object, so it will be in updated
       return this.put(updated);
     } else {
-      // Store doesn't use in-line keys, pass key separately
       return this.put(updated, key);
     }
   }
@@ -163,7 +145,6 @@ export class Table<T = any> {
 
     await deleteKey(store, serializedKey);
 
-    // Track change
     if (this.changeTracker) {
       this.changeTracker({
         table: this.storeName,
@@ -214,14 +195,10 @@ export class Table<T = any> {
       return (item as any)[this.keyPath];
     }
 
-    // Composite key
     return this.keyPath.map((path) => (item as any)[path]);
   }
 }
 
-/**
- * Live query implementation
- */
 class LiveQuery<T> {
   private observable: Observable<T[]>;
   private table: Table<T>;
@@ -233,7 +210,6 @@ class LiveQuery<T> {
     this.query = table.query();
     this.observable = new Observable<T[]>([]);
 
-    // Initial load
     this.refresh();
   }
 
@@ -302,7 +278,6 @@ class LiveQuery<T> {
   subscribe(callback: ObservableCallback<T[]>): Unsubscribe {
     const unsubscribe = this.observable.subscribe(callback);
 
-    // Set up change detection (simplified - in production, use MutationObserver or similar)
     if (!this.unsubscribe) {
       this.setupChangeDetection();
     }
@@ -322,13 +297,11 @@ class LiveQuery<T> {
   }
 
   private setupChangeDetection(): void {
-    // Simple polling-based change detection
-    // In a production system, you'd want to use IndexedDB change events or MutationObserver
     const interval = setInterval(() => {
       this.refresh().catch((error) => {
         console.error("Error refreshing live query:", error);
       });
-    }, 100); // Poll every 100ms
+    }, 100);
 
     this.unsubscribe = () => {
       if (interval) {
@@ -337,7 +310,6 @@ class LiveQuery<T> {
     };
   }
 
-  // Cleanup method to ensure intervals are cleared
   destroy(): void {
     if (this.unsubscribe) {
       this.unsubscribe();

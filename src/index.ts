@@ -18,6 +18,5 @@ export type {
   IndexSpec,
 } from "./types";
 
-// Default export for convenience
 import { Database } from "./core/database";
 export default Database;

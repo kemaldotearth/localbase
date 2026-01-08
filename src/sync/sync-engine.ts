@@ -1,7 +1,3 @@
-/**
- * Sync engine - handles synchronization between IndexedDB and Supabase
- */
-
 import { SupabaseAdapter } from "./supabase-adapter";
 import { ChangeTracker } from "./change-tracker";
 import { ConflictResolver } from "./conflict-resolver";
@@ -21,12 +17,10 @@ export class SyncEngine {
     this.config = config;
     this.adapter = new SupabaseAdapter(config);
 
-    // Set up auto-sync if enabled
     if (config.sync?.autoSync) {
       this.startAutoSync();
     }
 
-    // Set up real-time subscriptions if enabled
     if (config.sync?.realtime) {
       this.setupRealtime();
     }
@@ -53,7 +47,6 @@ export class SyncEngine {
         return;
       }
 
-      // Group changes by table
       const changesByTable = new Map<string, ChangeRecord[]>();
       for (const change of pendingChanges) {
         if (!changesByTable.has(change.table)) {
@@ -66,7 +59,6 @@ export class SyncEngine {
         `[Localbase] Pushing changes to ${changesByTable.size} table(s)`
       );
 
-      // Push changes for each table
       for (const [tableName, changes] of changesByTable) {
         console.log(
           `[Localbase] Pushing ${changes.length} changes for table '${tableName}'`
@@ -95,7 +87,6 @@ export class SyncEngine {
 
       const changeTracker = this.getChangeTracker();
 
-      // Pull from each configured table
       for (const [localTable, supabaseTable] of Object.entries(
         this.config.tables
       )) {
@@ -108,10 +99,8 @@ export class SyncEngine {
             lastSyncTimestamp
           );
 
-          // Apply remote changes to local
           const table = this.db.table(localTable);
           for (const record of remoteData) {
-            // Check for conflicts
             const local = await table.get(record.id);
             if (local) {
               const conflict = ConflictResolver.detectConflict(
@@ -134,7 +123,6 @@ export class SyncEngine {
             }
           }
 
-          // Update sync metadata
           await setSyncMetadata(idb, {
             table: localTable,
             lastSyncTimestamp: Date.now(),
@@ -147,12 +135,10 @@ export class SyncEngine {
             syncStatus: "idle",
           });
         } catch (error) {
-          // Log error but continue with other tables
           console.error(
             `Failed to sync table '${localTable}' (Supabase: '${supabaseTable}'):`,
             error
           );
-          // Update metadata with error status
           try {
             await setSyncMetadata(idb, {
               table: localTable,
@@ -168,7 +154,6 @@ export class SyncEngine {
               syncStatus: "error",
             });
           } catch (metadataError) {
-            // Ignore metadata update errors
             console.error("Failed to update sync metadata:", metadataError);
           }
         }
@@ -179,15 +164,10 @@ export class SyncEngine {
   }
 
   async full(): Promise<void> {
-    // Full bidirectional sync
     await this.pull();
     await this.push();
   }
 
-  /**
-   * Push all existing data from local tables to Supabase
-   * Useful for initial sync or when change tracking isn't working
-   */
   async pushAll(): Promise<void> {
     if (this.isSyncing) {
       return;
@@ -195,16 +175,13 @@ export class SyncEngine {
 
     this.isSyncing = true;
     try {
-      // Push all data from each configured table
       for (const [localTable, supabaseTable] of Object.entries(
         this.config.tables
       )) {
         try {
-          // Get all records from local table
           const allRecords = await this.db.table(localTable).getAll();
 
           if (allRecords.length > 0) {
-            // Deduplicate records by ID to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time" error
             const recordsMap = new Map<any, any>();
             for (const record of allRecords) {
               if (record.id !== undefined && record.id !== null) {
@@ -224,10 +201,8 @@ export class SyncEngine {
               `[Localbase] Pushing ${uniqueRecords.length} unique records from '${localTable}' to Supabase table '${supabaseTable}'`
             );
 
-            // Push all records to Supabase
             await this.adapter.push(localTable, uniqueRecords);
 
-            // Mark all existing changes as synced (if any)
             const changeTracker = this.getChangeTracker();
             const pendingChanges = await changeTracker.getPendingChanges(
               localTable
@@ -289,20 +264,15 @@ export class SyncEngine {
     try {
       const supabaseTableName = this.adapter.getSupabaseTableName(tableName);
 
-      // Push creates and updates
       if (creates.length > 0 || updates.length > 0) {
-        // Combine creates and updates, but deduplicate by ID
-        // If a record appears in both, prefer the update (more recent)
         const recordsMap = new Map<any, any>();
 
-        // First add creates
         for (const record of creates) {
           if (record.id !== undefined && record.id !== null) {
             recordsMap.set(record.id, record);
           }
         }
 
-        // Then add/overwrite with updates (updates take precedence)
         for (const record of updates) {
           if (record.id !== undefined && record.id !== null) {
             recordsMap.set(record.id, record);
@@ -328,7 +298,6 @@ export class SyncEngine {
         );
       }
 
-      // Push deletes
       if (deletes.length > 0) {
         console.log(
           `[Localbase] Deleting ${deletes.length} records from Supabase table '${supabaseTableName}'`
@@ -339,7 +308,6 @@ export class SyncEngine {
         );
       }
 
-      // Mark changes as synced
       const changeTracker = this.getChangeTracker();
       const changeIds = changes.map((c) => c.id);
       await changeTracker.markMultipleAsSynced(changeIds);

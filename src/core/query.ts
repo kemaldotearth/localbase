@@ -1,7 +1,3 @@
-/**
- * Query builder for table queries
- */
-
 export type WhereOperator =
   | "="
   | ">"
@@ -39,7 +35,6 @@ export class Query<T> {
   }
 
   filter(predicate: (item: T) => boolean): Query<T> {
-    // Store filter for later application
     (this as any).filterPredicate = predicate;
     return this;
   }
@@ -61,14 +56,11 @@ export class Query<T> {
   }
 
   async toArray(): Promise<T[]> {
-    // Create a new transaction for each query execution
-    // This ensures the transaction is active when we use it
     const transaction = this.db.transaction([this.storeName], "readonly");
     const store = transaction.objectStore(this.storeName);
 
     let results: T[] = [];
 
-    // Use index if available
     if (this.indexName) {
       try {
         const index = store.index(this.indexName);
@@ -76,14 +68,12 @@ export class Query<T> {
         const request = index.getAll(keyRange || undefined);
         results = await new Promise<T[]>((resolve, reject) => {
           request.onsuccess = () => {
-            // Transaction stays alive until request completes
             resolve(request.result);
           };
           request.onerror = () => reject(request.error);
           transaction.onerror = () => reject(transaction.error);
         });
       } catch (error) {
-        // If index doesn't exist, fall back to getAll
         const request = store.getAll();
         results = await new Promise<T[]>((resolve, reject) => {
           request.onsuccess = () => resolve(request.result);
@@ -92,11 +82,9 @@ export class Query<T> {
         });
       }
     } else {
-      // Fallback to getAll
       const request = store.getAll();
       results = await new Promise<T[]>((resolve, reject) => {
         request.onsuccess = () => {
-          // Transaction stays alive until request completes
           resolve(request.result);
         };
         request.onerror = () => reject(request.error);
@@ -104,18 +92,15 @@ export class Query<T> {
       });
     }
 
-    // Apply where clauses
     for (const clause of this.whereClauses) {
       results = this.applyWhereClause(results, clause);
     }
 
-    // Apply filter predicate if exists
     const filterPredicate = (this as any).filterPredicate;
     if (filterPredicate) {
       results = results.filter(filterPredicate);
     }
 
-    // Apply sorting
     if (this.sortField) {
       results.sort((a, b) => {
         const aVal = (a as any)[this.sortField!];
@@ -125,7 +110,6 @@ export class Query<T> {
       });
     }
 
-    // Apply offset and limit
     if (this.offsetCount > 0) {
       results = results.slice(this.offsetCount);
     }
@@ -151,7 +135,6 @@ export class Query<T> {
       return null;
     }
 
-    // Use first where clause for key range
     const clause = this.whereClauses[0];
 
     switch (clause.operator) {

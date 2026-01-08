@@ -1,7 +1,3 @@
-/**
- * Conflict resolution strategies
- */
-
 import type { Conflict, ConflictResolutionStrategy } from "../types";
 
 export class ConflictResolver {
@@ -26,7 +22,6 @@ export class ConflictResolver {
         return conflict.remote;
 
       default:
-        // Default to last-write-wins
         return conflict.remoteTimestamp > conflict.localTimestamp
           ? conflict.remote
           : conflict.local;
@@ -39,8 +34,6 @@ export class ConflictResolver {
     table: string,
     key: any
   ): Conflict | null {
-    // Simple conflict detection based on timestamps
-    // In production, you'd want more sophisticated conflict detection
     const localTimestamp = local?.updated_at
       ? new Date(local.updated_at).getTime()
       : local?.created_at
@@ -53,9 +46,7 @@ export class ConflictResolver {
       ? new Date(remote.created_at).getTime()
       : Date.now();
 
-    // If timestamps are different, there's a potential conflict
     if (Math.abs(localTimestamp - remoteTimestamp) > 1000) {
-      // 1 second threshold
       return {
         local,
         remote,
