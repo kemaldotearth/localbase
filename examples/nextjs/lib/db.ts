@@ -1,12 +1,3 @@
-/**
- * Database instance for Next.js
- * This should be used in client components only (IndexedDB is browser-only)
- *
- * Note: In this example, we import from the local source.
- * When using the published package, change the import to:
- * import { Database, generateSupabaseMigration } from "supalocal";
- */
-
 import {
   Database,
   generateSupabaseMigration,
@@ -14,7 +5,6 @@ import {
 } from "../../../src/index";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client (if using sync)
 const supabase =
   typeof window !== "undefined"
     ? createClient(
@@ -23,14 +13,6 @@ const supabase =
       )
     : null;
 
-/**
- * Database schema with Supabase column definitions
- *
- * Extended format allows you to define:
- * - keyPath: Primary key definition (++id for auto-increment)
- * - indexes: Fields to index for faster queries
- * - columns: Full column definitions for Supabase schema generation
- */
 const schema: Record<string, ExtendedTableSchema> = {
   users: {
     keyPath: "++id",
@@ -67,18 +49,15 @@ const schema: Record<string, ExtendedTableSchema> = {
   },
 };
 
-// Table name mapping (local name -> Supabase table name)
 const tableMapping = {
   users: "users",
   posts: "posts",
   todos: "todos",
 };
 
-// Create database instance
 let dbInstance: Database | null = null;
 
 export function getDatabase(): Database {
-  // Only create instance on client side
   if (typeof window === "undefined") {
     throw new Error("Database can only be used on the client side");
   }
@@ -92,9 +71,9 @@ export function getDatabase(): Database {
             sync: {
               strategy: "bidirectional",
               conflictResolution: "last-write-wins",
-              autoSync: false, // Set to true to enable automatic syncing every syncInterval ms
-              syncInterval: 5000, // Only used if autoSync is true (syncs every 5 seconds)
-              realtime: false, // Set to true to enable Supabase real-time subscriptions
+              autoSync: false,
+              syncInterval: 5000,
+              realtime: false,
             },
           }
         : undefined,
@@ -104,27 +83,12 @@ export function getDatabase(): Database {
   return dbInstance;
 }
 
-// Initialize database (call this in useEffect)
 export async function initDatabase(): Promise<Database> {
   const db = getDatabase();
   await db.open();
   return db;
 }
 
-/**
- * Generate Supabase SQL migration from schema
- *
- * Usage:
- * 1. Call this function to get the SQL
- * 2. Copy the output to a Supabase migration file
- * 3. Run `supabase db push` or apply in Supabase Dashboard
- *
- * Example:
- * ```
- * import { getSupabaseMigration } from './lib/db';
- * console.log(getSupabaseMigration());
- * ```
- */
 export function getSupabaseMigration(): string {
   return generateSupabaseMigration(schema, tableMapping, {
     enableRLS: true,
@@ -133,10 +97,6 @@ export function getSupabaseMigration(): string {
   });
 }
 
-/**
- * Log the Supabase migration SQL to the console
- * Useful for development - call this to see the SQL you need
- */
 export function logSupabaseMigration(): void {
   console.log("=".repeat(60));
   console.log("SUPABASE MIGRATION SQL");

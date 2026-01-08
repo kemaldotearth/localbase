@@ -4,9 +4,6 @@ import type {
   ColumnDefinition,
 } from "../types";
 
-/**
- * Maps common TypeScript/JavaScript types to PostgreSQL types
- */
 const TYPE_MAP: Record<string, string> = {
   string: "text",
   number: "numeric",
@@ -22,25 +19,19 @@ const TYPE_MAP: Record<string, string> = {
   timestamp: "timestamp",
 };
 
-/**
- * Generates a PostgreSQL column definition from a ColumnDefinition
- */
 function generateColumnDef(
   columnName: string,
   def: ColumnDefinition | string
 ): string {
   if (typeof def === "string") {
-    // If it's already a raw SQL type definition, use it directly
     return `"${columnName}" ${def}`;
   }
 
   const parts: string[] = [`"${columnName}"`];
 
-  // Map type
   const pgType = TYPE_MAP[def.type.toLowerCase()] || def.type;
   parts.push(pgType);
 
-  // Primary key
   if (def.primaryKey) {
     if (def.generated) {
       parts.push("primary key generated always as identity");
@@ -49,15 +40,12 @@ function generateColumnDef(
     }
   }
 
-  // Nullable
   if (def.nullable === false) {
     parts.push("not null");
   }
 
-  // Default value
   if (def.default !== undefined) {
     if (typeof def.default === "string" && def.default.includes("(")) {
-      // It's a function call like now()
       parts.push(`default ${def.default}`);
     } else if (typeof def.default === "string") {
       parts.push(`default '${def.default}'`);
@@ -68,12 +56,10 @@ function generateColumnDef(
     }
   }
 
-  // Unique
   if (def.unique) {
     parts.push("unique");
   }
 
-  // References (foreign key)
   if (def.references) {
     parts.push(`references ${def.references}`);
   }
@@ -81,9 +67,6 @@ function generateColumnDef(
   return parts.join(" ");
 }
 
-/**
- * Checks if a schema entry is an extended table schema
- */
 function isExtendedSchema(
   schema: string | ExtendedTableSchema | any[]
 ): schema is ExtendedTableSchema {
@@ -94,14 +77,6 @@ function isExtendedSchema(
   );
 }
 
-/**
- * Generates SQL migration for creating Supabase tables from Localbase schema
- *
- * @param schema - The Localbase schema definition
- * @param tableMapping - Optional mapping of local table names to Supabase table names
- * @param options - Generation options
- * @returns SQL migration string
- */
 export function generateSupabaseMigration(
   schema: TableSchema | Record<string, ExtendedTableSchema>,
   tableMapping?: Record<string, string>,
@@ -129,7 +104,6 @@ export function generateSupabaseMigration(
     const fullTableName = `${schemaName}.${supabaseTableName}`;
 
     if (isExtendedSchema(tableSchema)) {
-      // Use the extended schema with column definitions
       const columns = tableSchema.columns || tableSchema.supabase;
 
       if (!columns) {
@@ -143,7 +117,6 @@ export function generateSupabaseMigration(
         columnDefs.push("  " + generateColumnDef(colName, colDef));
       }
 
-      // Add timestamps if requested and not already present
       if (includeTimestamps) {
         if (!("updated_at" in columns)) {
           columnDefs.push('  "updated_at" timestamptz default now() not null');
@@ -156,7 +129,6 @@ export function generateSupabaseMigration(
       migrations.push(");");
       migrations.push("");
 
-      // Create updated_at trigger if timestamps are enabled
       if (includeTimestamps) {
         migrations.push(`-- Auto-update updated_at timestamp`);
         migrations.push(
@@ -183,7 +155,6 @@ export function generateSupabaseMigration(
         migrations.push("");
       }
 
-      // Enable RLS
       if (enableRLS) {
         migrations.push(`-- Enable Row Level Security`);
         migrations.push(
@@ -192,7 +163,6 @@ export function generateSupabaseMigration(
         migrations.push("");
       }
 
-      // Add example policies if requested
       if (includePolicies) {
         migrations.push(`-- Example RLS Policies (customize as needed)`);
         migrations.push(`-- Allow authenticated users to read all rows`);
@@ -229,7 +199,6 @@ export function generateSupabaseMigration(
         migrations.push("");
       }
     } else {
-      // Legacy string schema format - generate placeholder
       migrations.push(`-- Table: ${supabaseTableName}`);
       migrations.push(
         `-- Note: Using legacy schema format. Define columns manually or use extended schema format.`
@@ -243,9 +212,6 @@ export function generateSupabaseMigration(
   return migrations.join("\n");
 }
 
-/**
- * Generates a TypeScript interface from an extended schema definition
- */
 export function generateTypeScriptInterface(
   tableName: string,
   schema: ExtendedTableSchema
@@ -268,7 +234,6 @@ export function generateTypeScriptInterface(
 
 function getTypeScriptType(def: ColumnDefinition | string): string {
   if (typeof def === "string") {
-    // Parse raw SQL type
     const lower = def.toLowerCase();
     if (lower.includes("text") || lower.includes("varchar")) return "string";
     if (lower.includes("boolean")) return "boolean";
@@ -310,9 +275,6 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/**
- * Validates that a schema has all required fields for Supabase sync
- */
 export function validateSchemaForSync(
   schema: TableSchema | Record<string, ExtendedTableSchema>
 ): { valid: boolean; errors: string[] } {
@@ -327,7 +289,6 @@ export function validateSchemaForSync(
         continue;
       }
 
-      // Check for primary key
       const hasPrimaryKey = Object.entries(columns).some(([_, def]) => {
         if (typeof def === "string") {
           return def.toLowerCase().includes("primary key");
@@ -339,7 +300,6 @@ export function validateSchemaForSync(
         errors.push(`Table '${tableName}' has no primary key defined`);
       }
 
-      // Check for id column (recommended)
       if (!("id" in columns)) {
         errors.push(
           `Table '${tableName}' has no 'id' column (recommended for sync)`

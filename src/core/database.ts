@@ -290,7 +290,6 @@ export class Database {
     autoIncrement: boolean;
     indexes?: any[];
   } {
-    // Handle extended schema format (object with keyPath property)
     if (
       typeof schema === "object" &&
       !Array.isArray(schema) &&
@@ -301,7 +300,6 @@ export class Database {
       let keyPath: string | null = null;
       let autoIncrement = false;
 
-      // Parse keyPath string (e.g., "++id")
       if (keyPathStr.startsWith("++")) {
         keyPath = keyPathStr.substring(2);
         autoIncrement = true;
@@ -311,7 +309,6 @@ export class Database {
         keyPath = keyPathStr;
       }
 
-      // Convert string indexes to index objects
       const indexes = extendedSchema.indexes?.map((idx) => ({
         name: idx,
         keyPath: idx,
@@ -321,7 +318,6 @@ export class Database {
       return { keyPath, autoIncrement, indexes };
     }
 
-    // Handle legacy string format (e.g., "++id, name, email")
     if (typeof schema === "string") {
       const parts = schema.split(",").map((s) => s.trim());
       let keyPath: string | null = null;
@@ -348,7 +344,6 @@ export class Database {
       return { keyPath, autoIncrement, indexes };
     }
 
-    // Handle array of IndexSpec
     if (Array.isArray(schema)) {
       return { keyPath: null, autoIncrement: false, indexes: schema };
     }
